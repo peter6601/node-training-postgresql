@@ -145,6 +145,36 @@ const requestListener = async (req, res) => {
     } catch (error) {
       responseFail(res, headers, 500, "伺服器錯誤")
     }
+  } else if (req.url === "/api/coaches/skill" && req.method === "POST") {
+    req.on("end", async () => {
+      try {
+        const data = JSON.parse(body)
+        if (isUndefined(data.name) || isNotValidSting(data.name)) {
+          responseFail(res, headers, 400, "欄位未填寫正確")
+          return
+        }
+        const skillPackagesRepo = await AppDataSource.getRepository("Skill")
+        const exitPackages = await skillPackagesRepo.find({
+          where: {
+            name: data.name
+          }
+        })
+        if (exitPackages.length > 0) {
+          responseFail(res, headers, 409, "資料重複")
+          return
+        }
+        const newPackages = await skillPackagesRepo.create({
+          name: data.name
+        })
+        const result = await skillPackagesRepo.save(newPackages)
+        responseSuccess(res, headers, result)
+      } catch (error) {
+        responseFail(res, headers, 500, "伺服器錯誤")
+      }
+    })
+    } catch (error) {
+      responseFail(res, headers, 500, "伺服器錯誤")
+    }
   } else {
     res.writeHead(404, headers)
     res.write(JSON.stringify({
