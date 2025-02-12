@@ -136,6 +136,15 @@ const requestListener = async (req, res) => {
   } else if (req.method === "OPTIONS") {
     res.writeHead(200, headers)
     res.end()
+  } else if (req.url === "/api/coaches/skill" && req.method === "GET") {
+    try {
+      const packages = await AppDataSource.getRepository("Skill").find({
+        select: ["id", "name", "createdAt"]
+      })
+      responseSuccess(res, headers, packages)
+    } catch (error) {
+      responseFail(res, headers, 500, "伺服器錯誤")
+    }
   } else {
     res.writeHead(404, headers)
     res.write(JSON.stringify({
