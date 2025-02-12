@@ -211,4 +211,24 @@ async function startServer() {
   return server;
 }
 
+function responseSuccess(res, headers, data) {
+  res.writeHead(200, headers)
+  let stringJson = {
+    status: "success",
+  }
+  if (!isUndefined(data)) {
+    stringJson.data = data
+  }
+  res.write(JSON.stringify(stringJson))
+  res.end()
+}
+
+function responseFail(res, headers, code, message) {
+  res.writeHead(code, headers)
+  res.write(JSON.stringify({
+    status: code === 500 ? "error" : "fail",
+    message: message
+  }))
+  res.end()
+}
 module.exports = startServer();
