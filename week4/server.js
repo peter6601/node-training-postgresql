@@ -172,6 +172,22 @@ const requestListener = async (req, res) => {
         responseFail(res, headers, 500, "伺服器錯誤")
       }
     })
+  } else if (req.url.startsWith("/api/coaches/skill/") && req.method === "DELETE") {
+    try {
+      let packageID = req.url.split("/").pop()
+      if (isUndefined(packageID) || isNotValidSting(packageID)) {
+        responseFail(res, headers, 400, "ID錯誤")
+        return 
+      }
+      let result = await AppDataSource.getRepository("Skill").delete(packageID)
+      console.log("skill delete ",result)
+      console.log("skill delete affected",result.affected )
+      if (result.affected === 0) {
+        responseFail(res, headers, 400, "ID錯誤")
+        return
+      }
+      responseSuccess(res, headers)
+
     } catch (error) {
       responseFail(res, headers, 500, "伺服器錯誤")
     }
