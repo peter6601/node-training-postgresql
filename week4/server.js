@@ -2,15 +2,15 @@ require("dotenv").config()
 const http = require("http")
 const AppDataSource = require("./db")
 
-function isUndefined (value) {
+function isUndefined(value) {
   return value === undefined
 }
 
-function isNotValidSting (value) {
+function isNotValidSting(value) {
   return typeof value !== "string" || value.trim().length === 0 || value === ""
 }
 
-function isNotValidInteger (value) {
+function isNotValidInteger(value) {
   return typeof value !== "number" || value < 0 || value % 1 !== 0
 }
 
@@ -50,8 +50,8 @@ const requestListener = async (req, res) => {
       try {
         const data = JSON.parse(body)
         if (isUndefined(data.name) || isNotValidSting(data.name) ||
-                isUndefined(data.credit_amount) || isNotValidInteger(data.credit_amount) ||
-                isUndefined(data.price) || isNotValidInteger(data.price)) {
+          isUndefined(data.credit_amount) || isNotValidInteger(data.credit_amount) ||
+          isUndefined(data.price) || isNotValidInteger(data.price)) {
           res.writeHead(400, headers)
           res.write(JSON.stringify({
             status: "failed",
@@ -189,13 +189,13 @@ const requestListener = async (req, res) => {
       responseSuccess(res, headers)
 
     } catch (error) {
-      responseFail(res, headers, 500, "伺服器錯誤")
+        responseFail(res, headers, 500, "伺服器錯誤")
     }
   } else {
     res.writeHead(404, headers)
     res.write(JSON.stringify({
       status: "failed",
-      message: "無此網站路由",
+      message: "無此網站路由"
     }))
     res.end()
   }
