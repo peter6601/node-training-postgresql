@@ -180,8 +180,6 @@ const requestListener = async (req, res) => {
         return 
       }
       let result = await AppDataSource.getRepository("Skill").delete(packageID)
-      console.log("skill delete ",result)
-      console.log("skill delete affected",result.affected )
       if (result.affected === 0) {
         responseFail(res, headers, 400, "ID錯誤")
         return
