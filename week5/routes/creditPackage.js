@@ -1,9 +1,10 @@
 const express = require('express')
-
 const router = express.Router()
 const { dataSource } = require('../db/data-source')
 const logger = require('../utils/logger')('CreditPackage')
-const {isUndefined, isNotValidSting, isNotValidInteger } = require('../utils/validators')
+const {isUndefined, isNotValidString, isNotValidInteger } = require('../utils/validators')
+const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHandler')
+
 
 router.get('/', async (req, res, next) => {
     try {
@@ -19,8 +20,8 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
     try {
-        const data = JSON.parse(req.body)
-        if (isUndefined(data.name) || isNotValidSting(data.name) ||
+        const data = req.body
+        if (isUndefined(data.name) || isNotValidString(data.name) ||
           isUndefined(data.credit_amount) || isNotValidInteger(data.credit_amount) ||
           isUndefined(data.price) || isNotValidInteger(data.price)) {
             sendFailResponse(res, 400, "欄位未填寫正確")
@@ -52,7 +53,7 @@ router.post('/', async (req, res, next) => {
 router.delete('/:creditPackageId', async (req, res, next) => {
     try {
         const {creditPackageId} = req.params
-        if (isUndefined(creditPackageId) || isNotValidSting(creditPackageId)) {
+        if (isUndefined(creditPackageId) || isNotValidString(creditPackageId)) {
             sendFailResponse(res, 400, '欄位未填寫正確')
           return
         }
@@ -69,20 +70,3 @@ router.delete('/:creditPackageId', async (req, res, next) => {
 })
 
 module.exports = router
-
-function sendFailResponse(res, code, message) {
-    res.status(code).json({
-        status: "failed",
-       message: message
-       })
-}
-
-function sendSuccessResponse(res, data) {
-    let stringJson = {
-        status: "success",
-      }
-    if (!isUndefined(data)) {
-        stringJson.data = data
-      }
-    res.status(200).json(stringJson)
-}
