@@ -4,6 +4,8 @@ const config = require('../config/index')
 const CreditPackage = require('../entities/CreditPackages')
 const Skill = require('../entities/Skill')
 const User = require('../entities/User')
+const Coach = require('../entities/Coach')
+const Course = require('../entities/Course')
 
 
 const dataSource = new DataSource({
@@ -18,7 +20,9 @@ const dataSource = new DataSource({
   entities: [
     CreditPackage,
     Skill,
-    User
+    User,
+    Coach,
+    Course
   ],
   ssl: config.get('db.ssl')
 })
