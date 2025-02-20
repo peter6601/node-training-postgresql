@@ -11,7 +11,7 @@ router.get('/', async (req, res, next) => {
         let list = await dataSource.getRepository(repoName).find({
             select: ["id", "name", "createdAt"]
         })
-        sendSuccessResponse(res, list)
+        sendSuccessResponse(res,200, list)
     } catch(error) {
         logger.error(error)
         next(error)
@@ -39,7 +39,7 @@ router.post('/', async (req, res, next) => {
           name: data.name
         })
         const result = await skillPackagesRepo.save(newPackages)
-        sendSuccessResponse(res, result)
+        sendSuccessResponse(res,200, result)
       } catch (error) {
         logger.error(error)
         next(error)
@@ -59,7 +59,7 @@ router.delete('/:skillID', async (req, res, next)=> {
             sendFailResponse(res, 400, "ID錯誤")
           return
         }
-        sendSuccessResponse(res)
+        sendSuccessResponse(res, 200)
       } catch (error) {
         logger.error(error)
         next(error)

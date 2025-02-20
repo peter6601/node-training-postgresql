@@ -11,7 +11,7 @@ router.get('/', async (req, res, next) => {
         const packages = await dataSource.getRepository("CreditPackage").find({
           select: ["id", "name", "credit_amount", "price"]
         })
-        sendSuccessResponse(res, packages)
+        sendSuccessResponse(res, 200, packages)
       } catch (error) {
         logger.error(error)
         next(error)    
@@ -43,7 +43,7 @@ router.post('/', async (req, res, next) => {
           price: data.price
         })
         const result = await creditPackageRepo.save(newPackage)
-        sendSuccessResponse(res, result)
+        sendSuccessResponse(res,200, result)
       } catch (error) {
         logger.error(error)
         next(error)
@@ -62,7 +62,7 @@ router.delete('/:creditPackageId', async (req, res, next) => {
             sendFailResponse(res, 400, 'ID錯誤')
           return
         }
-        sendSuccessResponse(res)
+        sendSuccessResponse(res, 200)
       } catch (error) {
         logger.error(error)
         next(error)

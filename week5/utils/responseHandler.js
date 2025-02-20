@@ -1,4 +1,4 @@
-const { isUndefined } = require('./validators')
+const { isUndefined, isNotValidInteger } = require('./validators')
 const responseHandler = {
 
      sendFailResponse(res, code, message) {
@@ -7,14 +7,14 @@ const responseHandler = {
            message: message
            })
     },
-     sendSuccessResponse(res, data) {
+     sendSuccessResponse(res,code, data) {
         let stringJson = {
             status: "success",
           }
         if (!isUndefined(data)) {
             stringJson.data = data
           }
-        res.status(200).json(stringJson)
+        res.status(code).json(stringJson)
     }
 }
 
