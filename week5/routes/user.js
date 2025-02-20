@@ -13,7 +13,7 @@ const saltRounds = 10
 router.get('/', async (req, res, next) => {
     try  {
         let list = await dataSource.getRepository(repoName).find({
-            select: ["id", "name","email", "created_at"]
+            select: ["id", "name","email", "role","created_at"]
         })
         sendSuccessResponse(res, 200, list)
     } catch(error) {
