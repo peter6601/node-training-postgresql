@@ -11,13 +11,39 @@ router.get('/', async (req, res, next) => {
         let list = await dataSource.getRepository(repoName).find({
             select: ["id", "name", "createdAt"]
         })
-        console.log("skill get",list)
         sendSuccessResponse(res, list)
     } catch(error) {
-        console.log("skill get error",error)
         logger.error(error)
         next(error)
     }
+})
+
+router.post('/', async (req, res, next) => {
+    try {
+        const data = req.body
+        if (isUndefined(data.name) || isNotValidString(data.name)) {
+            sendFailResponse(res, 400, "欄位未填寫正確")
+          return
+        }
+        const skillPackagesRepo = await dataSource.getRepository(repoName)
+        const exitPackages = await skillPackagesRepo.find({
+          where: {
+            name: data.name
+          }
+        })
+        if (exitPackages.length > 0) {
+            sendFailResponse(res, 409, "資料重複")
+          return
+        }
+        const newPackages = await skillPackagesRepo.create({
+          name: data.name
+        })
+        const result = await skillPackagesRepo.save(newPackages)
+        sendSuccessResponse(res, result)
+      } catch (error) {
+        logger.error(error)
+        next(error)
+      }
 })
 
 
