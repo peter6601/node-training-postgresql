@@ -7,11 +7,14 @@ const logger = require('./utils/logger')('App')
 const creditPackageRouter = require('./routes/creditPackage')
 const skillRouter = require('./routes/skill')
 const userRouter = require('./routes/user')
+const adminRouter = require('./routes/admin')
+
 
 
 const creditPackagePath = "/api/credit-package"
 const skillPath = "/api/coaches/skill"
 const userPath = "/api/users"
+const adminPath = "/api/admin"
 
 const app = express()
 app.use(cors())
@@ -35,6 +38,8 @@ app.get('/healthcheck', (req, res) => {
 app.use(creditPackagePath, creditPackageRouter)
 app.use(skillPath, skillRouter)
 app.use(userPath, userRouter)
+app.use(adminPath, adminRouter)
+
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
