@@ -47,4 +47,23 @@ router.post('/', async (req, res, next) => {
 })
 
 
+router.delete('/:skillID', async (req, res, next)=> {
+    try {
+        const {skillID} = req.params
+        if (isUndefined(skillID) || isNotValidString(skillID)) {
+            sendFailResponse(res, 400, "ID錯誤")
+          return 
+        }
+        let result = await dataSource.getRepository(repoName).delete(skillID)
+        if (result.affected === 0) {
+            sendFailResponse(res, 400, "ID錯誤")
+          return
+        }
+        sendSuccessResponse(res)
+      } catch (error) {
+        logger.error(error)
+        next(error)
+      }
+})
+
 module.exports = router
