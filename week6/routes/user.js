@@ -3,12 +3,24 @@ const bcrypt = require('bcrypt')
 
 const router = express.Router()
 const {dataSource} = require('../db/data-source')
-const logger = require('../utils/logger')('skill')
+const logger = require('../utils/logger')('Users')
 const {validateName, validateEmail, validatePassword } = require('../utils/validators')
 const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHandler')
+const generateJWT = require('../utils/generateJWT')
+const config = require('../config/index')
+const auth = require('../middlewares/auth') ({
+  secret: config.get('secret').jwtSecret,
+  userRepository: dataSource.getRepository('user'),
+  logger
+})
 const repoName = "User"
 const saltRounds = 10
 
+const urlPath = {
+  sginup: "signup",
+  login: 'login',
+  profile: 'profile'
+}
 
 router.get('/', async (req, res, next) => {
     try  {
@@ -20,7 +32,7 @@ router.get('/', async (req, res, next) => {
     }
 })
 
-router.post('/signup', async (req, res, next) => {
+router.post('/' + urlPath.sginup, async (req, res, next) => {
     try {
         const { name, email, password } = req.body
         if (!validateName(name)) {
@@ -66,4 +78,59 @@ router.post('/signup', async (req, res, next) => {
       }
 })
 
+router.post('/'+ urlPath.login, async (req, res, next) => {
+  try {
+    const {email, password } = req.body
+       if (!validateEmail(email)) {
+        sendFailResponse(res, 400, "欄位未填寫正確")
+        return
+       }
+       if (!validatePassword(password)) {
+        sendFailResponse(res, 400, "密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字")
+        return
+       }
+       const repo = await dataSource.getRepository(repoName)
+       const existAccount = await repo.findOne({
+        select: ['id', 'name', 'password'],
+         where: {
+           email: email
+         }
+       })
+       if (!existAccount) {
+        sendFailResponse(res, 400, "使用者不存在或密碼輸入錯誤")
+       }
+       logger.info(`使用者資料: ${JSON.stringify(existAccount)}`)
+       const isMatch = await bcrypt.compare(password, existAccount.password)
+       if (!isMatch) {
+        sendFailResponse(res, 400, "使用者不存在或密碼輸入錯誤")
+       }
+       const token = await generateJWT(
+        { id: existAccount.id },
+        config.get('secret.jwtSecret'),
+        {expiresIn: `${config.get('secret.jwtExpiresDay')}`}
+      )
+      const jsonString = {
+        token: token,
+        user: {
+          name: existAccount.name
+        }
+      }
+      sendSuccessResponse(res, 201, jsonString)
+  } catch(error) {
+    logger.error('登入錯誤:', error)
+        next(error)
+  }
+
+})
+
+router.post('/'+ urlPath.profile, auth, async (req, res, next) => {
+
+
+})
+
+
+router.put('/'+ urlPath.profile, auth, async (req, res, next) => {
+
+
+})
 module.exports = router
