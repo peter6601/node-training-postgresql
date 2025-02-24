@@ -144,7 +144,32 @@ router.get('/' + urlPath.profile, auth, async (req, res, next) => {
 
 
 router.put('/' + urlPath.profile, auth, async (req, res, next) => {
-
-
+  try {
+    const { id } = req.user
+    const { name } = req.body
+    const repo = await dataSource.getRepository(repoName)
+    const existAccount = await repo.findOne({
+      select: ['name'],
+      where: {
+        id: id
+      }
+    })
+    if (name === existAccount.name) {
+      sendFailResponse(res, 400, "使用者名稱未變更")
+      return
+    }
+    let result = await repo.update(
+      { id, name: existAccount.name },
+      { name }
+    )
+    if (result.affected === 0) {
+      sendFailResponse(res, 400, "更新使用者資料失敗")
+      return
+    }
+    sendSuccessResponse(res, 200)
+  } catch (error) {
+    logger.error('取得使用者資料錯誤:', error)
+    next(error)
+  }
 })
 module.exports = router
