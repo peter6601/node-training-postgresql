@@ -7,7 +7,13 @@ const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHand
 const userRepoName = "User"
 const coachRepoName = "Coach"
 const courseRepoName = "Course"
-
+const config = require('../config/index')
+const iCoach = require("../middlewares/iCoach")
+const auth = require('../middlewares/auth')({
+    secret: config.get('secret').jwtSecret,
+    userRepository: dataSource.getRepository(userRepoName),
+    logger
+  })
 module.exports = router
 
 router.get('/coaches/courses', async (req, res, next) => {
@@ -20,13 +26,10 @@ router.get('/coaches/courses', async (req, res, next) => {
     }
 })
 
-router.post('/coaches/courses', async (req, res, next) => {
+router.post('/coaches/courses', auth, iCoach, async (req, res, next) => {
    try {
     const reqData = req.body
-    if (isUndefined(reqData.user_id) || isNotValidString(reqData.user_id)) {
-        sendFailResponse(res, 400, "欄位未填寫正確")
-        return
-    }
+    const {id} = req.user
     if (isUndefined(reqData.skill_id) || isNotValidString(reqData.skill_id)) {
         sendFailResponse(res, 400, "欄位未填寫正確")
         return
@@ -52,19 +55,19 @@ router.post('/coaches/courses', async (req, res, next) => {
         return
     }
 
-    let userRepo = await dataSource.getRepository(userRepoName)
-    let user = await userRepo.findOne({ where: { id: reqData.user_id } });
-    if (!user) {
-        sendFailResponse(res, 400, "使用者不存在")
-        return
-    }
-    if (user.role != "COACH") {
-        sendFailResponse(res, 400, "使用者尚未成為教練")
-        return  
-    }
+    // let userRepo = await dataSource.getRepository(userRepoName)
+    // let user = await userRepo.findOne({ where: { id: reqData.user_id } });
+    // if (!user) {
+    //     sendFailResponse(res, 400, "使用者不存在")
+    //     return
+    // }
+    // if (user.role != "COACH") {
+    //     sendFailResponse(res, 400, "使用者尚未成為教練")
+    //     return  
+    // }
     let courseRepo = await dataSource.getRepository(courseRepoName)
     let course = await courseRepo.create({
-			user_id: reqData.user_id,
+			user_id: id,
 			skill_id: reqData.skill_id,
 			name : reqData.name,
 			description : reqData.description,
@@ -87,7 +90,7 @@ router.post('/coaches/courses', async (req, res, next) => {
 
 })
 
-router.put('/coaches/courses/:courseId', async (req, res, next) => {
+router.put('/coaches/courses/:courseId',auth, iCoach, async (req, res, next) => {
     try {
         const { courseId } = req.params
         const reqData = req.body
