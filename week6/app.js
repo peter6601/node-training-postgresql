@@ -43,7 +43,7 @@ app.use(skillPath, skillRouter)
 app.use(userPath, userRouter)
 app.use(adminPath, adminRouter)
 app.use(coachPath, coachRouter)
-app.use(coursePath, coursePath)
+app.use(coursePath, courseRouter)
 
 
 
