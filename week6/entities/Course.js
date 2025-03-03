@@ -67,13 +67,13 @@ module.exports = new EntitySchema({
       }
     },
     relations: {
-      user: {
+      User: {
         type: 'many-to-one',
         target: 'User', 
         joinColumn: {
           name: 'user_id'}
       },
-      skill: {
+      Skill: {
         type: 'many-to-one',
         target: 'Skill', 
         joinColumn: {

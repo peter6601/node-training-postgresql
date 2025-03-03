@@ -17,7 +17,7 @@ const skillPath = "/api/coaches/skill"
 const userPath = "/api/users"
 const adminPath = "/api/admin"
 const coachPath = "/api/coaches"
-const coursePath = "/api/course"
+const coursePath = "/api/courses"
 
 const app = express()
 app.use(cors())
