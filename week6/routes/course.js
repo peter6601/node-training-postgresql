@@ -83,7 +83,7 @@ router.post('/:courseId', auth, async (req, res, next) => {
     let courseBookingRepo =  dataSource.getRepository(CourseBookingRepoName)
 
     let existCourse = await courseBookingRepo.findOne({ 
-        where: { user_id: id, course_id: courseId }})
+        where: { user_id: id, course_id: courseId, cancelledAt: IsNull() }})
     if (existCourse) {
         sendFailResponse(res, 400, '已經報名過此課程')
         return
@@ -101,7 +101,7 @@ router.post('/:courseId', auth, async (req, res, next) => {
     }
 
     let courseBookingCount =  await courseBookingRepo.count({
-        where: { id: courseId, cancelledAt: IsNull() }
+        where: { course_id: courseId, cancelledAt: IsNull() }
     })
     if (courseBookingCount >= course.max_participants) {
         sendFailResponse(res, 400, '已達最大參加人數，無法參加')
