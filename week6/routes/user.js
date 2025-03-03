@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt')
 const router = express.Router()
 const { dataSource } = require('../db/data-source')
 const logger = require('../utils/logger')('Users')
-const { validateName, validateEmail, validatePassword } = require('../utils/validators')
+const { validateName, validateEmail, validatePassword, isNotValidString} = require('../utils/validators')
 const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHandler')
 const generateJWT = require('../utils/generateJWT')
 const config = require('../config/index')
@@ -135,18 +135,21 @@ router.get('/' + urlPath.profile, auth, async (req, res, next) => {
         id: id
       }
     })
-    sendSuccessResponse(res, 201, existAccount)
+    sendSuccessResponse(res, 200, existAccount)
   } catch (error) {
     logger.error('取得使用者資料錯誤:', error)
     next(error)
   }
 })
 
-
+//更新個人資料
 router.put('/' + urlPath.profile, auth, async (req, res, next) => {
   try {
     const { id } = req.user
     const { name } = req.body
+    if(isNotValidString(name)) {
+      sendFailResponse(res, 400, "資料錯誤")
+    }
     const repo = await dataSource.getRepository(repoName)
     const existAccount = await repo.findOne({
       select: ['name'],

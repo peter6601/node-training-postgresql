@@ -131,7 +131,7 @@ router.put('/coaches/courses/:courseId',auth, iCoach, async (req, res, next) => 
     let jsonString = {
         "course": result
     }
-    sendSuccessResponse(res, 201, jsonString)
+    sendSuccessResponse(res, 200, jsonString)
     } catch(error) {
         logger.error(error)
         next(error)
