@@ -7,14 +7,20 @@ const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHand
 const repoName = "User"
 const saltRounds = 10
 
+const { password } = require('../config/db')
+const generateJWT = require('../utils/generateJWT')
+
 module.exports = {
     postSignUp,
     postLogin,
     getProfile,
     putProfile,
+    getCreditPackages,
+    putPassword,
+    getCourses,
     getUserList
 }
-
+//註冊
 async function postSignUp(req, res, next) {
     try {
         const { name, email, password } = req.body
@@ -61,6 +67,7 @@ async function postSignUp(req, res, next) {
     }
 }
 
+//登入
 async function postLogin(req, res, next) {
     try {
         const { email, password } = req.body
@@ -105,6 +112,7 @@ async function postLogin(req, res, next) {
     }
 }
 
+//取得個人資料
 async function getProfile(req, res, next) {
     try {
         let { id } = req.user
@@ -122,6 +130,7 @@ async function getProfile(req, res, next) {
     }
 }
 
+//編輯個人資料
 async function putProfile(req, res, next) {
     try {
         const { id } = req.user
@@ -155,12 +164,31 @@ async function putProfile(req, res, next) {
       }
 }
 
-async function getUserList(req, res, next) {
-     try {
-        let list = await dataSource.getRepository(repoName).find()
-        sendSuccessResponse(res, 200, list)
-      } catch (error) {
-        logger.error(error)
-        next(error)
-      }
+
+//TODO:取得使用者已購買的方案列表
+async function getCreditPackages(req, res, next) {
+    
 }
+
+//TODO:使用者更新密碼
+async function putPassword(req, res, next) {
+    
+}
+
+//TODO:取得已預約的課程列表
+async function getCourses(req, res, next) {
+    
+}
+
+
+//取得使用者列表(Dev)
+async function getUserList(req, res, next) {
+    try {
+       let list = await dataSource.getRepository(repoName).find()
+       sendSuccessResponse(res, 200, list)
+     } catch (error) {
+       logger.error(error)
+       next(error)
+     }
+}
+
