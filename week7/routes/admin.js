@@ -14,31 +14,40 @@ const auth = require('../middlewares/auth')({
   })
 module.exports = router
 
-//變更教練權限
-router.post('/coaches/:userId', admins.postToCoach)
+const urlPath = {
+  postToCoach: '/coaches/:userId',
+  postCourse: '/coaches/courses',
+  putCoach:'/coaches',
+  getCoachOwnCourses: '/coaches/courses',
+  getCoachOwnCourseDetail: '/coaches/courses/:courseId',
+  getCoachOwnDetail:'/coaches',
+  getCoachOwnMonthReveune:'/coaches',
+  putCourse:'/coaches/courses/:courseId'
 
+}
 //新增教練課程
-router.post('/coaches/courses', auth, iCoach, admins.postCourse)
+router.post(urlPath.postToCoach, auth, iCoach, admins.postCourse)
+
+//變更教練權限
+router.post(urlPath.postToCoach, admins.postToCoach)
 
 //變更教練資料
-router.put('/coaches', auth, iCoach, admins.postCourse)
+router.put(urlPath.putCoach, auth, iCoach, admins.putCoach)
 
 //取得教練自己的課程列表
-router.get('/coaches/courses',auth, iCoach, admins.getCoachOwnCourses)
+router.get(urlPath.getCoachOwnCourses,auth, iCoach, admins.getCoachOwnCourses)
 
 //取得教練自己的課程詳細資料
-router.get('/coaches/courses/:courseId',auth, iCoach, admins.getCoachOwnCourseDetail)
+router.get(urlPath.getCoachOwnCourseDetail,auth, iCoach, admins.getCoachOwnCourseDetail)
 
 //取得教練自己詳細資料
-router.get('/coaches',auth, iCoach, admins.getCoachOwnDetail)
-
+router.get(urlPath.getCoachOwnDetail,auth, iCoach, admins.getCoachOwnDetail)
 
 //取得教練自己的月營收資料
-router.get('/coaches',auth, iCoach, admins.getCoachOwnMonthReveune)
-
+router.get(urlPath.getCoachOwnMonthReveune,auth, iCoach, admins.getCoachOwnMonthReveune)
 
 //變更教練課程資料
-router.put('/coaches/courses/:courseId',auth, iCoach, admins.putCourse)
+router.put(urlPath.putCourse ,auth, iCoach, admins.putCourse)
 
 //取得所有課程(Dev)
 router.get('/coaches/courses',admins.getAllCourses)
