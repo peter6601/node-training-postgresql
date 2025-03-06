@@ -4,6 +4,7 @@ const { isUndefined, isNotValidString } = require('../utils/validators')
 const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHandler')
 const { P } = require('pino')
 const coachRepoName = "Coach"
+const CourseRepoName = "Course"
 
 module.exports =  {
     getAllCoaches,
@@ -72,7 +73,21 @@ async function  getCoachDetail(req, res, next) {
     }
 }
 
-//TODO: 取得指定教練課程列表
+//取得指定教練課程列表
 async function getCoachCourses(req, res, next) {
- 
+ const {coachId} = req.params
+     try {
+         let coach = await dataSource.getRepository(coachRepoName).findOne(
+             { where: { id: coachId } }
+         )
+         let list = await dataSource.getRepository(CourseRepoName).find(
+            { where: { user_id: coach.user_id },
+            select: ['id', 'status','name','start_at', 'end_at', 'max_participants', 'participants'],
+         }
+        )
+         sendSuccessResponse(res, 200, list)
+     } catch (error) {
+         logger.error(error)
+         next(error)
+     }
 }
