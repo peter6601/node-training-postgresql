@@ -23,10 +23,10 @@ const urlPath = {
   getCoachOwnDetail:'/coaches',
   getCoachOwnMonthReveune:'/coaches',
   putCourse:'/coaches/courses/:courseId'
-
 }
+
 //新增教練課程
-router.post(urlPath.postToCoach, auth, iCoach, admins.postCourse)
+router.post(urlPath.postCourse, auth, iCoach, admins.postCourse)
 
 //變更教練權限
 router.post(urlPath.postToCoach, admins.postToCoach)
