@@ -1,18 +1,20 @@
 const bcrypt = require('bcrypt')
+const { IsNull } = require('typeorm')
+
 const { dataSource } = require('../db/data-source')
 const logger = require('../utils/logger')('UsersControllers')
 const { validateName, validateEmail, validatePassword, isNotValidString } = require('../utils/validators')
 const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHandler')
 
-const UserRepoName = "User"
 const saltRounds = 10
 const config = require('../config/index')
 const { password } = require('../config/db')
 const generateJWT = require('../utils/generateJWT')
-const CreditPurchase = require('../entities/CreditPurchase')
-const CreditPackages = require('../entities/CreditPackages')
 
+const UserRepoName = "User"
 const CreditPurchaseRepoName = "CreditPurchase"
+const CourseBookingRepoName = "CourseBooking"
+
 
 module.exports = {
     postSignUp,
@@ -175,10 +177,10 @@ async function getCreditPackages(req, res, next) {
         let { id } = req.user
         let creditPurchaseRepo = dataSource.getRepository(CreditPurchaseRepoName)
         let list = await creditPurchaseRepo.find(
-            { 
+            {
                 where: { user_id: id },
-                relations: {CreditPackage: true},
-                order: {purchaseAt: 'DESC'}
+                relations: { CreditPackage: true },
+                order: { purchaseAt: 'DESC' }
             }
         )
         let purchases = list.map(item => ({
@@ -187,7 +189,7 @@ async function getCreditPackages(req, res, next) {
             name: item.CreditPackage.name,
             purchase_at: item.purchaseAt
         }))
-        sendSuccessResponse(res,200,purchases)
+        sendSuccessResponse(res, 200, purchases)
     } catch (error) {
         logger.error('取得使用者資料錯誤:', error)
         next(error)
@@ -198,7 +200,7 @@ async function getCreditPackages(req, res, next) {
 //使用者更新密碼
 async function putPassword(req, res, next) {
     const { password, new_password, confirm_new_password } = req.body
-    const {id} = req.user
+    const { id } = req.user
     if (!validatePassword(password)) {
         sendFailResponse(res, 400, "欄位未填寫正確")
         return
@@ -208,45 +210,64 @@ async function putPassword(req, res, next) {
         sendFailResponse(res, 400, "密碼不符合規則，需要包含英文數字大小寫，最短8個字，最長16個字")
         return
     }
-    if (new_password !== confirm_new_password ) {
+    if (new_password !== confirm_new_password) {
         sendFailResponse(res, 400, "新密碼與驗證新密碼不一致")
         return
     }
-    if (new_password === password ) {
+    if (new_password === password) {
         sendFailResponse(res, 400, "新密碼不能與舊密碼相同")
         return
     }
-   try {
-    const userRepo = dataSource.getRepository(UserRepoName)
-    const user = await userRepo.findOne({
-        where: {id: id},
-        select: ['password']
-    })
-    const match = await bcrypt.compare(password, user.password)
-    if (match) {
-        const hashNewPassword = await bcrypt.hash(new_password, saltRounds);
-        let renewUser = await userRepo.update(
-            {id: id},
-            {password: hashNewPassword}
-        )
-        if (renewUser.affected === 0) {
-            sendFailResponse(res, 400, "更新密碼失敗")
-            return
-        } 
-        sendSuccessResponse(res,200, null )
-    } else {
-        sendFailResponse(res, 400, "密碼錯誤")
+    try {
+        const userRepo = dataSource.getRepository(UserRepoName)
+        const user = await userRepo.findOne({
+            where: { id: id },
+            select: ['password']
+        })
+        const match = await bcrypt.compare(password, user.password)
+        if (match) {
+            const hashNewPassword = await bcrypt.hash(new_password, saltRounds);
+            let renewUser = await userRepo.update(
+                { id: id },
+                { password: hashNewPassword }
+            )
+            if (renewUser.affected === 0) {
+                sendFailResponse(res, 400, "更新密碼失敗")
+                return
+            }
+            sendSuccessResponse(res, 200, null)
+        } else {
+            sendFailResponse(res, 400, "密碼錯誤")
+        }
+    } catch (error) {
+        logger.error(error)
+        next(error)
     }
-   }catch(error) {
-    logger.error(error)
-    next(error)
-   }
 }
 
-//TODO:取得已預約的課程列表
+//取得已預約的課程列表
 async function getCourses(req, res, next) {
-    
-}   
+    const { id } = req.user
+    try {
+        const [courseBookings, creditUsage, totalPurchasedCredits] = await Promise.all([
+            getCourseBookings(id),
+            getCreditUsage(id),
+            getTotalPurchasedCredits(id)
+        ]);
+
+        const creditRemain = totalPurchasedCredits - creditUsage;
+        let jsonString = {
+            credit_remain: creditRemain,
+            credit_usage: creditUsage,
+            course_booking: courseBookings
+        };
+
+        sendSuccessResponse(res, 200, jsonString)
+    } catch (error) {
+        logger.error(error)
+        next(error)
+    }
+}
 
 
 //取得使用者列表(Dev)
@@ -260,3 +281,50 @@ async function getUserList(req, res, next) {
     }
 }
 
+
+
+//Helper:
+async function getCreditUsage(userId) {
+    let courseBookingRepo = dataSource.getRepository(CourseBookingRepoName);
+    let bookingResult = await courseBookingRepo
+        .createQueryBuilder('cb')
+        .select('COUNT(*)', "credit_usage")
+        .where("cb.user_id = :userId", { userId })
+        .andWhere("cb.cancelledAt IS NULL")
+        .getRawOne()
+    return bookingResult.credit_usage
+}
+
+async function getTotalPurchasedCredits(userId) {
+    let creditPurchaseRepo = dataSource.getRepository(CreditPurchaseRepoName)
+    let purchaseResult = await creditPurchaseRepo
+        .createQueryBuilder('cp')
+        .select("SUM(cp.purchased_credits)", "totalCredits")
+        .where("cp.user_id = :userId", { userId })
+        .getRawOne();
+    return purchaseResult.total_credits || 0;
+}
+
+async function getCourseBookings(userId) {
+    const bookings = await dataSource
+        .getRepository("CourseBooking")
+        .createQueryBuilder("booking")
+        .innerJoin("Course", "course", "booking.course_id = course.id")
+        .innerJoin("User", "coach", "course.user_id = coach.id")
+        .select([
+            "course.name as name",
+            "booking.course_id as course_id",
+            "coach.name as coach_name",
+            "CASE WHEN booking.cancelled_at IS NOT NULL THEN 'cancelled' " +
+            "WHEN booking.join_at IS NOT NULL THEN 'joined' " +
+            "ELSE 'pending' END as status",
+            "course.start_at as start_at",
+            "course.end_at as end_at",
+            "course.meeting_url as meeting_url"
+        ])
+        .where("booking.user_id = :userId", { userId })
+        .andWhere("booking.cancelled_at IS NULL")
+        .getRawMany();
+
+    return bookings;
+}

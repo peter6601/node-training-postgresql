@@ -19,7 +19,7 @@ const urlPath = {
   profile: 'profile',
   creditPackages:'credit-package',
   password: 'password',
-  course: 'course'
+  course: 'courses'
 }
 
 module.exports = router
@@ -37,7 +37,7 @@ router.put('/' + urlPath.profile, auth, users.putProfile)
 router.get('/' + urlPath.creditPackages, auth, users.getCreditPackages)
 //使用者更新密碼
 router.put('/' + urlPath.password, auth, users.putPassword)
-//TODO:取得已預約的課程列表
+//取得已預約的課程列表
 router.get('/' + urlPath.course, auth, users.getCourses)
 //取得使用者列表(Dev)
 router.get('/', users.getUserList)
