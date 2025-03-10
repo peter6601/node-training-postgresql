@@ -1,3 +1,6 @@
+const dayjs = require('dayjs')
+const utc = require('dayjs/plugin/utc')
+
 const { dataSource } = require('../db/data-source')
 const logger = require('../utils/logger')('ControllerAdmin')
 const { isUndefined, isNotValidString, isNotValidInteger } = require('../utils/validators')
@@ -5,6 +8,9 @@ const { sendSuccessResponse, sendFailResponse } = require('../utils/responseHand
 const userRepoName = "User"
 const coachRepoName = "Coach"
 const courseRepoName = "Course"
+const courseBookingRepoName = "CourseBooking"
+const creditPackageRepoName = "CreditPackage"
+
 const config = require('../config/index')
 const iCoach = require("../middlewares/iCoach")
 const auth = require('../middlewares/auth')({
@@ -24,6 +30,21 @@ module.exports = {
     putCourse,
     getAllCoaches,
     getAllCourses
+}
+dayjs.extend(utc)
+const monthMap = {
+    january: 1,
+    february: 2,
+    march: 3,
+    april: 4,
+    may: 5,
+    june: 6,
+    july: 7,
+    august: 8,
+    september: 9,
+    october: 10,
+    november: 11,
+    december: 12
 }
 
 //變更教練權限
@@ -160,9 +181,12 @@ async function putCoach(req, res, next) {
             return
         }
         let coachRepo = dataSource.getRepository(coachRepoName)
+        coachRepo
+            .createQueryBuilder()
+            .update()
         let result = await coachRepo.update(
             { user_id: id }, {
-                experience_years: data.experience_years,
+            experience_years: data.experience_years,
             description: data.description,
             profile_image_url: data.profile_image_url
         }
@@ -173,7 +197,7 @@ async function putCoach(req, res, next) {
         }
         let coach = await coachRepo.findOne({
             where: { user_id: id },
-            select:['experience_years', 'description', 'profile_image_url']
+            select: ['experience_years', 'description', 'profile_image_url']
         })
         sendSuccessResponse(res, 200, coach)
     } catch (error) {
@@ -211,14 +235,69 @@ async function getCoachOwnDetail(req, res, next) {
         })
         sendSuccessResponse(res, 200, coach)
     } catch (error) {
+        loggeå.error(error)
+        next(error)
+    }
+}
+
+//取得教練自己的月營收資料
+async function getCoachOwnMonthReveune(req, res, next) {
+    try {
+        const { id } = req.user
+        const { month } = req.query
+        if (isUndefined(month || Object.prototype.hasOwnProperty.call(monthMap, month))) {
+            let errMessage = '欄位未填寫正確'
+            logger.warn(errMessage)
+            sendFailResponse(res, 400, errMessage)
+            return
+        }
+        const courseRepo = dataSource.getRepository(courseRepoName)
+        const courseIds = await courseRepo
+            .createQueryBuilder()
+            .select('course.id')
+            .from('Course', 'course')
+            .where('course.user_id = :userId', { userId: id })
+            .getMany()
+            .then(course => course.map(course => course.id))
+        let jsonString = {
+            total: {
+                revenue: 0,
+                participants: 0,
+                course_count: 0
+            }
+        }
+        if (courseIds.length === 0) {
+            sendSuccessResponse(res, 201, jsonString)
+            return
+        }
+        const year = new Date().getFullYear()
+        const calculateStartAt = dayjs(`${year}-${month}-01`).startOf('month').toISOString()
+        const calculateEndAt = dayjs(`${year}-${month}-01`).endOf('month').toISOString()
+        let courseCount = await getCountby("course", courseIds, calculateStartAt, calculateEndAt)
+        let participants = await getCountby("participant", courseIds, calculateStartAt, calculateEndAt)
+        let creditPackageRepo = dataSource.getRepository(creditPackageRepoName)
+        const totalPackage = await creditPackageRepo.createQueryBuilder()
+            .select('SUM(credit_amount)', 'total_credit_amount')
+            .addSelect('SUM(price)', 'total_price')
+            .getRawOne()
+        const perCreditPrice = totalPackage.total_price / totalPackage.total_credit_amount
+        const totalRevenue = courseCount.count * perCreditPrice
+        jsonString = {
+            total: {
+                revenue: Math.floor(totalRevenue),
+                participants: parseInt(participants.count, 10),
+                course_count: parseInt(courseCount.count, 10)
+            }
+        }
+        sendSuccessResponse(res, 200, jsonString)
+    } catch (error) {
         logger.error(error)
         next(error)
     }
 }
 
-//TODO:取得教練自己的月營收資料
-async function getCoachOwnMonthReveune(req, res, next) {
-}
+
+
 
 //變更教練課程資料
 async function putCourse(req, res, next) {
@@ -293,3 +372,17 @@ async function getAllCourses(req, res, next) {
     }
 }
 
+
+
+async function getCountby(title, courseIds, calculateStartAt, calculateEndAt) {
+    let select = title === "course" ? 'COUNT(*)' : 'COUNT(DISTINCT(user_id))'
+    const courseBookingRepo = dataSource.getRepository(courseBookingRepoName)
+    const count = await courseBookingRepo.createQueryBuilder()
+        .select(select, 'count')
+        .where('course_id IN (:...ids)', { ids: courseIds })
+        .andWhere('cancelled_at IS NULL')
+        .andWhere('created_at >= :startDate', { startDate: calculateStartAt })
+        .andWhere('created_at <= :endDate', { endDate: calculateEndAt })
+        .getRawOne()
+    return count
+}

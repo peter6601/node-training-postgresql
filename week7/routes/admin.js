@@ -21,7 +21,7 @@ const urlPath = {
   getCoachOwnCourses: '/coaches/courses',
   getCoachOwnCourseDetail: '/coaches/courses/:courseId',
   getCoachOwnDetail:'/coaches',
-  getCoachOwnMonthReveune:'/coaches',
+  getCoachOwnMonthReveune:'/coaches/revenue',
   putCourse:'/coaches/courses/:courseId'
 }
 
