@@ -10,6 +10,8 @@ const coachRepoName = "Coach"
 const courseRepoName = "Course"
 const courseBookingRepoName = "CourseBooking"
 const creditPackageRepoName = "CreditPackage"
+const coachLinkSkillRepoName = "CoachLinkSkill"
+
 
 const config = require('../config/index')
 const iCoach = require("../middlewares/iCoach")
@@ -163,43 +165,77 @@ async function getCoachOwnCourses(req, res, next) {
     }
 }
 
-//TODO:變更教練資料
+//變更教練資料
 async function putCoach(req, res, next) {
     try {
         const { id } = req.user
         const data = req.body
+        let err400Message = '欄位未填寫正確'
         if (isUndefined(data.experience_years) || isNotValidInteger(data.experience_years)) {
-            sendFailResponse(req, 400, '欄位未填寫正確')
+            sendFailResponse(req, 400, err400Message)
             return
         }
         if (isUndefined(data.description) || isNotValidString(data.description)) {
-            sendFailResponse(res, 400, '欄位未填寫正確')
+            sendFailResponse(res, 400, err400Message)
             return
         }
         if (isUndefined(data.profile_image_url) || isNotValidString(data.profile_image_url)) {
-            sendFailResponse(res, 400, '欄位未填寫正確')
+            sendFailResponse(res, 400, err400Message)
             return
         }
+        if (isUndefined(data.skill_ids) || !Array.isArray(data.skill_ids)) {
+            sendFailResponse(res, 400, err400Message)
+            return
+        }
+        // if (data.skill_ids.length === 0 || data.skill_ids.every(skill => isUndefined(skill) || isNotValidSting(skill))) {
+        //     logger.warn(err400Message)
+        //     sendFailResponse(res, 40-, err400Message)
+        //     return
+        //   }
         let coachRepo = dataSource.getRepository(coachRepoName)
-        coachRepo
-            .createQueryBuilder()
-            .update()
-        let result = await coachRepo.update(
-            { user_id: id }, {
+        let coach = await coachRepo.findOne({
+            where: { user_id: id },
+            select: ['id','experience_years', 'description', 'profile_image_url']
+        })
+        let resultCoach = await coachRepo.update(
+            { id: coach.id }, {
             experience_years: data.experience_years,
             description: data.description,
             profile_image_url: data.profile_image_url
-        }
-        )
-        if (result.affected === 0) {
+        })
+        if (resultCoach.affected === 0) {
             sendFailResponse(res, 400, "更新使用者資料失敗")
             return
         }
-        let coach = await coachRepo.findOne({
-            where: { user_id: id },
-            select: ['experience_years', 'description', 'profile_image_url']
-        })
-        sendSuccessResponse(res, 200, coach)
+        const coachLinkSkillRepo = dataSource.getRepository(coachLinkSkillRepoName)
+        let newCoachLinkSkill = data.skill_ids.map(skill => ({
+            coach_id: coach.id,
+            skill_id: skill
+        }))
+        
+        await coachLinkSkillRepo.delete({coach_id: coach.id})
+        let insert = await coachLinkSkillRepo.insert(newCoachLinkSkill)
+        const result = await coachRepo.createQueryBuilder('coach')
+        .select([
+          'coach.id',
+          'coach.experience_years',
+          'coach.description',
+          'coach.profile_image_url',
+          'coachLinkSkill.skill_id'
+        ])
+        .leftJoin('coach.CoachLinkSkill', 'coachLinkSkill')
+        .where('coach.id = :coachId', { coachId: coach.id })
+        .getOne();
+        let skill_ids = result.CoachLinkSkill.length > 0 ? result.CoachLinkSkill.map(skill => skill.skill_id) : result.CoachLinkSkill
+        let jsonString = {
+            id: result.id,
+            experience_years: result.experience_years,
+            description: result.description,
+            profile_image_url: result.profile_image_url,
+            skill_ids: skill_ids
+        }
+
+        sendSuccessResponse(res, 200, jsonString)
     } catch (error) {
         logger.error(error)
         next(error)
